@@ -17,7 +17,11 @@ def ray_init(force_remote: bool = False):
 
         if address is None:
             username = getpass.getuser()
-            ray_tmpdir = f"/tmp/ray_{username}"
+            # Use MATHEW_HOME for Ray temp directory to avoid /tmp disk space issues
+            # Keep path short to avoid Unix socket path length limit (107 bytes)
+            mathew_home = os.environ.get("MATHEW_HOME", "/tmp")
+            ray_tmpdir = os.path.join(mathew_home, "ray")
+            os.makedirs(ray_tmpdir, exist_ok=True)
             logger.info(
                 "Using local ray client with temporary directory '%s'", ray_tmpdir
             )

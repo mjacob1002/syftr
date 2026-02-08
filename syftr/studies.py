@@ -957,6 +957,21 @@ class SearchSpace(BaseModel):
         default_factory=AdditionalContext,
         description="Configuration for additional context.",
     )
+    # Remote retriever configuration (for using external retrieval APIs)
+    remote_retriever_host: T.Optional[str] = Field(
+        default=None,
+        description="Host address for remote retrieval API (e.g., '130.127.134.41'). "
+        "If specified, uses remote retrieval instead of building local indexes.",
+    )
+    remote_retriever_method: T.Optional[T.List[str]] = Field(
+        default=None,
+        description="List of remote retrieval methods to optimize over "
+        "(e.g., ['bm25', 'dense_small', 'dense_large', 'hybrid_small', 'hybrid_large']).",
+    )
+    remote_retriever_timeout: T.Optional[int] = Field(
+        default=30,
+        description="Timeout in seconds for remote retrieval API calls.",
+    )
     react_rag_agent: ReactRAGAgent = Field(
         default_factory=ReactRAGAgent,
         description="Configuration for the ReAct RAG agent.",
@@ -1240,9 +1255,24 @@ class RetrieverSearchSpace(BaseModel):
         default_factory=AdditionalContext,
         description="Configuration for additional context.",
     )
+    # Remote retriever configuration (for using external retrieval APIs)
+    remote_retriever_host: T.Optional[str] = Field(
+        default=None,
+        description="Host address for remote retrieval API (e.g., '130.127.134.41'). "
+        "If specified, uses remote retrieval instead of building local indexes.",
+    )
+    remote_retriever_method: T.Optional[T.List[str]] = Field(
+        default=None,
+        description="List of remote retrieval methods to optimize over "
+        "(e.g., ['bm25', 'dense_small', 'dense_large', 'hybrid_small', 'hybrid_large']).",
+    )
+    remote_retriever_timeout: T.Optional[int] = Field(
+        default=30,
+        description="Timeout in seconds for remote retrieval API calls.",
+    )
 
     def defaults(self) -> ParamDict:
-        return {
+        defaults_dict = {
             "rag_mode": self.rag_modes[0],
             "response_synthesizer_llm_name": self.response_synthesizer_llms[0],
             "additional_context_enabled": False,
@@ -1250,6 +1280,13 @@ class RetrieverSearchSpace(BaseModel):
             **self.rag_retriever.defaults(),
             **self.splitter.defaults(),
         }
+        # Add remote retriever defaults if configured
+        if self.remote_retriever_host:
+            defaults_dict["remote_retriever_host"] = self.remote_retriever_host
+            if self.remote_retriever_method:
+                defaults_dict["remote_retriever_method"] = self.remote_retriever_method[0]
+            defaults_dict["remote_retriever_timeout"] = self.remote_retriever_timeout or 30
+        return defaults_dict
 
     def build_distributions(
         self, params: T.Dict[str, T.Any] | T.List[str] | None = None
@@ -1266,6 +1303,12 @@ class RetrieverSearchSpace(BaseModel):
             **self.rag_retriever.build_distributions(prefix="rag_"),
             **self.splitter.build_distributions(),
         }
+        # Add remote retriever distributions if configured
+        if self.remote_retriever_method:
+            distributions["remote_retriever_method"] = CategoricalDistribution(
+                self.remote_retriever_method
+            )
+
         if True in self.hyde_enabled:
             distributions.update(self.hyde.build_distributions())
         if True in self.additional_context_enabled:
@@ -1294,6 +1337,15 @@ class RetrieverSearchSpace(BaseModel):
             **self.rag_retriever.sample(trial, prefix="rag_"),
             **self.splitter.sample(trial),
         }
+        # Add remote retriever params if configured
+        if self.remote_retriever_host:
+            params["remote_retriever_host"] = self.remote_retriever_host
+            if self.remote_retriever_method:
+                params["remote_retriever_method"] = trial.suggest_categorical(
+                    "remote_retriever_method", self.remote_retriever_method
+                )
+            params["remote_retriever_timeout"] = self.remote_retriever_timeout or 30
+
         if params["hyde_enabled"]:
             params.update(**self.hyde.sample(trial))
         if params["additional_context_enabled"]:
@@ -1500,6 +1552,36 @@ class JudgeSearchSpace(BaseModel):
         "detailed",
         "comparison",
     ]
+    # Remote retriever configuration (for using external retrieval APIs)
+    remote_retriever_host: T.Optional[str] = Field(
+        default=None,
+        description="Host address for remote retrieval API.",
+    )
+    remote_retriever_method: T.Optional[T.List[str]] = Field(
+        default=None,
+        description="List of remote retrieval methods to optimize over.",
+    )
+    remote_retriever_timeout: T.Optional[int] = Field(
+        default=30,
+        description="Timeout in seconds for remote retrieval API calls.",
+    )
+    # Additional fields that may be passed through from other search spaces
+    response_synthesizer_llms: T.Optional[T.List[str]] = Field(
+        default=None,
+        description="LLMs used for response synthesis (passed through).",
+    )
+    rag_retriever: T.Optional[T.Any] = Field(
+        default=None,
+        description="RAG retriever config (passed through).",
+    )
+    hyde_enabled: T.Optional[T.List[bool]] = Field(
+        default=None,
+        description="HyDE enabled flag (passed through).",
+    )
+    additional_context_enabled: T.Optional[T.List[bool]] = Field(
+        default=None,
+        description="Additional context enabled flag (passed through).",
+    )
 
     def defaults(self) -> ParamDict:
         return {

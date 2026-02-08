@@ -1,0 +1,79 @@
+# FinanceBench Full Pipeline Evaluation
+# Tests: Retrieval (5 methods) + Generation (Qwen3-8B) → Answer Quality
+
+name: financebench-full-pipeline
+
+# Dataset
+dataset:
+  xname: financebench_hf
+
+# Optimization
+optimization:
+  cpus_per_trial: 1
+  max_concurrent_trials: 3
+  num_eval_samples: 30      # 30 questions per trial
+  num_eval_batch: 10
+  num_trials: 25            # Test retrieval method + top_k combinations
+  objective_1_name: accuracy
+  objective_2_name: llm_cost_mean
+
+# Evaluation - Full pipeline with LLM judge
+evaluation:
+  eval_type: correctness
+  llm_names:
+    - qwen3-8b-local        # Qwen3 judges the answers
+  mode: single              # Single LLM judge
+  score_threshold: 3.5      # Score >= 3.5 = correct
+  raise_on_exception: false
+
+# Search Space
+search_space:
+  # Remote retrieval configuration
+  remote_retriever_host: "130.127.134.41"
+
+  # Optimize: which retrieval method?
+  remote_retriever_method:
+    - bm25
+    - dense_small
+    - dense_large
+    - hybrid_small
+    - hybrid_large
+
+  remote_retriever_timeout: 30
+
+  # Optimize: how many documents to retrieve?
+  rag_retriever:
+    top_k:
+      kmin: 5
+      kmax: 20
+      step: 5
+      log: false
+
+  # Fixed: Qwen3-8B generator
+  response_synthesizer_llm_config:
+    llm_names:
+      - qwen3-8b-local
+
+  # Fixed: standard RAG
+  template_names:
+    - default
+
+  rag_modes:
+    - rag
+
+  # Disable advanced features
+  few_shot_enabled:
+    - false
+
+  hyde_enabled:
+    - false
+
+  reranker_enabled:
+    - false
+
+  additional_context_enabled:
+    - false
+
+# Study settings
+recreate_study: true
+toy_mode: false

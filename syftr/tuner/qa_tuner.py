@@ -60,7 +60,7 @@ from syftr.prompts.judge import (
     JUDGE_SYSTEM_PROMPT_TEN,
 )
 from syftr.ray.utils import ray_init
-from syftr.retrievers.build import build_rag_retriever
+from syftr.retrievers.build import build_rag_retriever, build_remote_retriever
 from syftr.startup import prepare_worker
 from syftr.studies import (
     RetrieverStudyConfig,
@@ -233,7 +233,11 @@ def build_flow(params: T.Dict, study_config: StudyConfig) -> Flow:
             if params.get("hyde_enabled")
             else None
         )
-        retriever, docstore = build_rag_retriever(study_config, params)
+        # Use remote retriever if host is specified, otherwise build local
+        if params.get("remote_retriever_host"):
+            retriever, docstore = build_remote_retriever(study_config, params)
+        else:
+            retriever, docstore = build_rag_retriever(study_config, params)
         return RetrieverFlow(
             response_synthesizer_llm=response_synthesizer_llm,
             retriever=retriever,
@@ -296,7 +300,11 @@ def build_flow(params: T.Dict, study_config: StudyConfig) -> Flow:
         else:
             additional_context_num_nodes = 0
 
-        rag_retriever, rag_docstore = build_rag_retriever(study_config, params)
+        # Use remote retriever if host is specified, otherwise build local
+        if params.get("remote_retriever_host"):
+            rag_retriever, rag_docstore = build_remote_retriever(study_config, params)
+        else:
+            rag_retriever, rag_docstore = build_rag_retriever(study_config, params)
 
         match params["rag_mode"]:
             case "rag":

@@ -15,6 +15,7 @@ from syftr.hf_endpoint_embeddings import HFEndpointEmbeddings
 from syftr.huggingface_helper import get_embedding_model
 from syftr.llm import LLM_NAMES, get_llm
 from syftr.logger import logger
+from syftr.retrievers.remote import get_remote_retriever
 from syftr.retrievers.storage import get_cached, index_cache_lock, put_cache
 from syftr.studies import ParamDict, StudyConfig
 from syftr.tuner.core import build_splitter
@@ -247,3 +248,36 @@ def build_dummy_retriever(
             raise NotImplementedError("DummyRetriever only supports async retrieval.")
 
     return DummyRetriever(), docstore
+
+
+def build_remote_retriever(
+    study_config: StudyConfig, params: ParamDict
+) -> T.Tuple[BaseRetriever, BaseDocumentStore]:
+    """Builds a retriever that calls an external retrieval API.
+
+    This is used when you want to optimize over pre-existing retrieval servers
+    rather than building indexes locally.
+
+    Required params:
+        - remote_retriever_host: IP or hostname of retrieval server
+        - remote_retriever_method: One of "bm25", "dense_small", "dense_large", "hybrid_small", "hybrid_large"
+        - rag_top_k: Number of results to retrieve
+    """
+    logger.info(f"Building remote retriever for {params=}")
+
+    host = str(params["remote_retriever_host"])
+    method = str(params["remote_retriever_method"])
+    top_k = int(params["rag_top_k"])
+    timeout = int(params.get("remote_retriever_timeout", 30))
+
+    retriever = get_remote_retriever(
+        host=host,
+        retrieval_method=method,
+        top_k=top_k,
+        timeout=timeout,
+    )
+
+    # Create empty docstore since we don't have local documents
+    docstore = StorageContext.from_defaults().docstore
+
+    return retriever, docstore

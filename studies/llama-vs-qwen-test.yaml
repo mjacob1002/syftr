@@ -1,0 +1,53 @@
+# Basic Syftr Study: Llama-3-8B vs Qwen3-8B on DR Docs Dataset
+# Quick test comparing two local models in direct generation mode
+
+name: llama-vs-qwen-test
+
+# Dataset configuration
+dataset:
+  xname: drdocs_hf
+
+# Optimization settings for quick testing
+optimization:
+  cpus_per_trial: 1
+  max_concurrent_trials: 2
+  num_eval_samples: 5  # Small number for quick testing
+  num_eval_batch: 5
+  num_trials: 10  # Enough to test both models multiple times
+
+# Evaluation configuration
+evaluation:
+  eval_type: correctness
+  llm_names:
+    - llama-3-8b-local  # Use Llama-3 as evaluator
+  mode: random
+  score_threshold: 3.5
+  raise_on_exception: false
+
+# Search space - comparing two models in simple generation mode
+search_space:
+  # The two models being compared
+  response_synthesizer_llm_config:
+    llm_names:
+      - llama-3-8b-local
+      - qwen3-8b-local
+
+  # Prompt template
+  template_names:
+    - default
+
+  # RAG mode - using simple direct generation for this test
+  rag_modes:
+    - no_rag
+
+  # Disable additional features for simplicity
+  few_shot_enabled:
+    - false
+  hyde_enabled:
+    - false
+  reranker_enabled:
+    - false
+
+# Study management
+recreate_study: true  # Start fresh
+toy_mode: true  # Use toy mode for quick testing

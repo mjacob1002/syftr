@@ -1,0 +1,60 @@
+# FinanceBench Retrieval Optimization - Sweep over retrievers and top_k
+# Fixed generator: Qwen3-8B, Optimize: retrieval method + top_k
+
+name: financebench-retriever-sweep
+
+# Dataset configuration
+dataset:
+  xname: financebench_hf
+
+# Optimization settings
+optimization:
+  cpus_per_trial: 1
+  max_concurrent_trials: 5
+  num_eval_samples: 50  # More samples for reliable results
+  num_eval_batch: 10
+  num_trials: 40  # More trials to cover all combinations
+  objective_1_name: retriever_recall
+  objective_2_name: retriever_context_length
+
+# Evaluation configuration - retriever-only mode
+evaluation:
+  mode: retriever
+  llm_names:
+    - qwen3-8b-local  # Use Qwen3 for evaluation
+  raise_on_exception: false
+
+# Search space - optimizing remote retrieval configurations
+search_space:
+  # Fixed host for all retrieval servers
+  remote_retriever_host: "130.127.134.41"
+
+  # The 5 retrieval methods to compare
+  remote_retriever_method:
+    - bm25
+    - dense_small
+    - dense_large
+    - hybrid_small
+    - hybrid_large
+
+  # Timeout for retrieval API calls
+  remote_retriever_timeout: 30
+
+  # Optimize over top_k parameter (number of documents to retrieve)
+  rag_retriever:
+    top_k:
+      kmin: 5
+      kmax: 20
+      step: 5
+      log: false
+
+  # Disable other features to focus on retrieval method + top_k
+  hyde_enabled:
+    - false
+
+  additional_context_enabled:
+    - false
+
+# Study management
+recreate_study: true
+toy_mode: false
