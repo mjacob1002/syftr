@@ -1,5 +1,5 @@
 # FinanceBench Full Pipeline Evaluation
-# Tests: Retrieval (5 methods) + Generation (Qwen3-8B) → Answer Quality
+# Tests: Retrieval (5 methods) + Generation (Llama-3-8B) → Judging (Llama-3-70B)
 
 name: financebench-full-pipeline
 
@@ -21,7 +21,7 @@ optimization:
 evaluation:
   eval_type: correctness
   llm_names:
-    - qwen3-8b-local        # Qwen3 judges the answers
+    - llama-3-70b-local       # Llama-3-70B judges the answers
   mode: single              # Single LLM judge
   score_threshold: 3.5      # Score >= 3.5 = correct
   raise_on_exception: false
@@ -49,10 +49,10 @@ search_space:
       step: 5
       log: false
 
-  # Fixed: Qwen3-8B generator
+  # Fixed: Llama-3-8B generator
   response_synthesizer_llm_config:
     llm_names:
-      - qwen3-8b-local
+      - llama-3-8b-local
 
   # Fixed: standard RAG
   template_names:
