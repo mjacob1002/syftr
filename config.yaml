@@ -1,0 +1,61 @@
+# Syftr Configuration for Local Models Experiment
+# Comparing Llama-3-8B vs Qwen3-8B on DataRobot documentation QA
+
+generative_models:
+  # Model 1: Llama-3-8B hosted on vLLM (Port 3031)
+  llama-3-8b-local:
+    provider: openai_like
+    model_name: "meta-llama/Meta-Llama-3-8B-Instruct"
+    temperature: 0.0
+    max_tokens: 2048
+    api_base: "http://localhost:3031/v1"
+    api_key: "EMPTY"
+    context_window: 8192
+    timeout: 120
+    is_chat_model: true
+    is_function_calling_model: true
+    cost:
+      type: hourly
+      rate: 1.50  # GPU hourly cost
+
+  # Model 2: Llama-3-70B hosted on vLLM (Port 3000) - Judge
+  llama-3-70b-local:
+    provider: openai_like
+    model_name: "meta-llama/Meta-Llama-3-70B-Instruct"
+    temperature: 0.0
+    max_tokens: 2048
+    api_base: "http://localhost:3000/v1"
+    api_key: "EMPTY"
+    context_window: 8192
+    timeout: 120
+    is_chat_model: true
+    is_function_calling_model: true
+    cost:
+      type: hourly
+      rate: 3.00  # Higher cost for 70B model
+
+  # Model 3: Qwen3-8B (Already Running on Port 8001)
+  qwen3-8b-local:
+    provider: openai_like
+    model_name: "Qwen/Qwen3-8B"
+    temperature: 0.0
+    max_tokens: 2048
+    api_base: "http://localhost:8001/v1"
+    api_key: "EMPTY"
+    context_window: 40960
+    timeout: 120
+    is_chat_model: true
+    is_function_calling_model: false
+    cost:
+      type: hourly
+      rate: 1.50  # GPU hourly cost
+
+# Path configurations
+paths:
+  tmp_dir: /m-coriander/coriander/mjacob2/tmp/syftr
+
+# Ray configuration for local execution
+ray:
+  local: true
+  num_gpus: 0  # Syftr doesn't need GPUs, models are hosted externally
+  _temp_dir: /m-coriander/coriander/mjacob2/tmp/ray  # Use directory with more space
